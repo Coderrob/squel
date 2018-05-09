@@ -4057,7 +4057,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
 
       _classCallCheck(this, _class59);
 
-      blocks = blocks || [new cls.StringBlock(options, 'SELECT'), new cls.DistinctBlock(options), new cls.CosmosdbTopBlock(options), new cls.CosmosdbValueBlock(options), new cls.GetFieldBlock(options), new cls.FromTableBlock(options), new cls.JoinBlock(options), new cls.WhereBlock(options), new cls.OrderByBlock(options)];
+      blocks = blocks || [new cls.StringBlock(options, 'SELECT'), new cls.CosmosdbTopBlock(options), new cls.CosmosdbValueBlock(options), new cls.GetFieldBlock(options), new cls.FromTableBlock(options), new cls.JoinBlock(options), new cls.WhereBlock(options), new cls.OrderByBlock(options)];
 
       var _this66 = _possibleConstructorReturn(this, (_class59.__proto__ || Object.getPrototypeOf(_class59)).call(this, options, blocks));
 

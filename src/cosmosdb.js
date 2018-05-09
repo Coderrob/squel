@@ -52,7 +52,6 @@ squel.flavours['cosmosdb'] = function (_squel) {
         constructor(options, blocks = null) {
             blocks = blocks || [
                 new cls.StringBlock(options, 'SELECT'),
-                new cls.DistinctBlock(options),
                 new cls.CosmosdbTopBlock(options),
                 new cls.CosmosdbValueBlock(options),
                 new cls.GetFieldBlock(options),
