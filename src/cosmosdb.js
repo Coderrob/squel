@@ -7,6 +7,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
     cls.DefaultQueryBuilderOptions.numberedParameters = true;
     cls.DefaultQueryBuilderOptions.numberedParametersPrefix = '@';
 
+
     _squel.registerValueHandler(Date, function (date) {
         return `'${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}'`;
     });
@@ -16,10 +17,11 @@ squel.flavours['cosmosdb'] = function (_squel) {
         constructor(options) {
             super(options);
             this._limits = null;
-            this.top = function (max) {
-                max = this._sanitizeLimitOffset(max);
-                this._parent._limits = max;
-            };
+        }
+
+        top(max) {
+            max = this._sanitizeLimitOffset(max);
+            this._limits = max;
         }
 
         _toParamString() {
@@ -28,8 +30,30 @@ squel.flavours['cosmosdb'] = function (_squel) {
                 str = `TOP (${this._limits})`;
             }
             return {
-                query: str,
-                parameters: [],
+                text: str,
+                values: [],
+            }
+        }
+    };
+
+    cls.CosmosdbValueBlock = class extends cls.Block {
+        constructor(options) {
+            super(options);
+            this._value = '';
+        }
+
+        value(field) {
+            this._value = this._sanitizeField(field);
+        }
+
+        _toParamString() {
+            let str = '';
+            if (this._value) {
+                str = `VALUE ${this._value}`;
+            }
+            return {
+                text: str,
+                values: [],
             }
         }
     };
@@ -40,7 +64,8 @@ squel.flavours['cosmosdb'] = function (_squel) {
             blocks = blocks || [
                 new cls.StringBlock(options, 'SELECT'),
                 new cls.DistinctBlock(options),
-                new cls.CosmosdbTopBlock(options).TOP(),
+                new cls.CosmosdbTopBlock(options),
+                new cls.CosmosdbValueBlock(options),
                 new cls.GetFieldBlock(options),
                 new cls.FromTableBlock(options),
                 new cls.JoinBlock(options),
@@ -62,6 +87,10 @@ squel.flavours['cosmosdb'] = function (_squel) {
                 }
 
                 return dst;
+            };
+
+            this.toString = function (options = {}) {
+                return this._toParamString(options).query;
             };
         }
 
