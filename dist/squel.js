@@ -3978,5 +3978,204 @@ squel.flavours['postgres'] = function (_squel) {
     return _class56;
   }(cls.QueryBuilder);
 };
+
+squel.flavours['cosmosdb'] = function (_squel) {
+  var cls = _squel.cls;
+
+  cls.DefaultQueryBuilderOptions.parameterCharacter = '@';
+  cls.DefaultQueryBuilderOptions.replaceSingleQuotes = true;
+  cls.DefaultQueryBuilderOptions.autoQuoteAliasNames = false;
+  cls.DefaultQueryBuilderOptions.numberedParameters = true;
+  cls.DefaultQueryBuilderOptions.numberedParametersPrefix = '@';
+
+  _squel.registerValueHandler(Date, function (date) {
+    return '\'' + date.getUTCFullYear() + '-' + (date.getUTCMonth() + 1) + '-' + date.getUTCDate() + ' ' + date.getUTCHours() + ':' + date.getUTCMinutes() + ':' + date.getUTCSeconds() + '\'';
+  });
+
+  // TOP x
+  cls.CosmosdbTopBlock = function (_cls$AbstractVerbSing3) {
+    _inherits(_class57, _cls$AbstractVerbSing3);
+
+    function _class57(options) {
+      _classCallCheck(this, _class57);
+
+      return _possibleConstructorReturn(this, (_class57.__proto__ || Object.getPrototypeOf(_class57)).call(this, _extend({}, options, {
+        verb: 'TOP'
+      })));
+    }
+
+    _createClass(_class57, [{
+      key: 'top',
+      value: function top(max) {
+        this._setValue(max);
+      }
+    }]);
+
+    return _class57;
+  }(cls.AbstractVerbSingleValueBlock);
+
+  cls.CosmosdbValueBlock = function (_cls$Block21) {
+    _inherits(_class58, _cls$Block21);
+
+    function _class58(options) {
+      _classCallCheck(this, _class58);
+
+      var _this65 = _possibleConstructorReturn(this, (_class58.__proto__ || Object.getPrototypeOf(_class58)).call(this, options));
+
+      _this65._value = '';
+      return _this65;
+    }
+
+    _createClass(_class58, [{
+      key: 'value',
+      value: function value(field) {
+        this._value = this._sanitizeField(field);
+      }
+    }, {
+      key: '_toParamString',
+      value: function _toParamString() {
+        var str = '';
+        if (this._value) {
+          str = 'VALUE ' + this._value;
+        }
+        return {
+          text: str,
+          values: []
+        };
+      }
+    }]);
+
+    return _class58;
+  }(cls.Block);
+
+  // SELECT query builder.
+  cls.Select = function (_cls$QueryBuilder15) {
+    _inherits(_class59, _cls$QueryBuilder15);
+
+    function _class59(options) {
+      var blocks = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+      _classCallCheck(this, _class59);
+
+      blocks = blocks || [new cls.StringBlock(options, 'SELECT'), new cls.DistinctBlock(options), new cls.CosmosdbTopBlock(options), new cls.CosmosdbValueBlock(options), new cls.GetFieldBlock(options), new cls.FromTableBlock(options), new cls.JoinBlock(options), new cls.WhereBlock(options), new cls.OrderByBlock(options)];
+
+      var _this66 = _possibleConstructorReturn(this, (_class59.__proto__ || Object.getPrototypeOf(_class59)).call(this, options, blocks));
+
+      _this66._extend = function (dst) {
+        for (var _len12 = arguments.length, sources = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
+          sources[_key12 - 1] = arguments[_key12];
+        }
+
+        if (dst && sources) {
+          var _loop2 = function _loop2(src) {
+            if ((typeof src === 'undefined' ? 'undefined' : _typeof(src)) === 'object') {
+              Object.getOwnPropertyNames(src).forEach(function (key) {
+                dst[key] = src[key];
+              });
+            }
+          };
+
+          var _iteratorNormalCompletion18 = true;
+          var _didIteratorError18 = false;
+          var _iteratorError18 = undefined;
+
+          try {
+            for (var _iterator18 = sources[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+              var src = _step18.value;
+
+              _loop2(src);
+            }
+          } catch (err) {
+            _didIteratorError18 = true;
+            _iteratorError18 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion18 && _iterator18.return) {
+                _iterator18.return();
+              }
+            } finally {
+              if (_didIteratorError18) {
+                throw _iteratorError18;
+              }
+            }
+          }
+        }
+
+        return dst;
+      };
+
+      _this66.toString = function () {
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        return this._toParamString(options).query;
+      };
+      return _this66;
+    }
+
+    // Get the final fully constructed query param obj.
+
+
+    _createClass(_class59, [{
+      key: '_toParamString',
+      value: function _toParamString() {
+        var _this67 = this;
+
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        options = this._extend({}, this.options, options);
+
+        var blockResults = this.blocks.map(function (b) {
+          return b._toParamString({
+            buildParameterized: options.buildParameterized,
+            queryBuilder: _this67
+          });
+        });
+
+        var blockTexts = blockResults.map(function (b) {
+          return b.text || '';
+        });
+        var blockValues = blockResults.map(function (b) {
+          return b.values || [];
+        });
+
+        var totalStr = blockTexts.filter(function (v) {
+          return 0 < v.length;
+        }).join(options.separator);
+
+        var totalValues = [];
+        var index = undefined !== options.numberedParametersStartAt ? options.numberedParametersStartAt : 1;
+
+        blockValues.forEach(function (block) {
+          return block.forEach(function (value) {
+            return totalValues.push({
+              'name': '' + options.numberedParametersPrefix + index++,
+              'value': value
+            });
+          });
+        });
+
+        if (!options.nested) {
+          if (options.numberedParameters) {
+            var i = undefined !== options.numberedParametersStartAt ? options.numberedParametersStartAt : 1;
+
+            // construct regex for searching
+            var regex = options.parameterCharacter.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+            totalStr = totalStr.replace(new RegExp(regex, 'g'), function () {
+              return '' + options.numberedParametersPrefix + i++;
+            });
+          }
+        }
+
+        return {
+          query: this._applyNestingFormatting(totalStr, !!options.nested),
+          parameters: totalValues
+        };
+      }
+    }]);
+
+    return _class59;
+  }(cls.QueryBuilder);
+};
 return squel;
 }));

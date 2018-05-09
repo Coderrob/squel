@@ -50,8 +50,9 @@ gulp.task('build-full', function() {
   return gulp.src([
       './src/core.js',
       './src/mssql.js',
-      './src/mysql.js',
+      './src/mysql.js',      
       './src/postgres.js',
+      './src/cosmosdb.js',
     ])
     .pipe( concat('squel.js') )
     .pipe( replace(/<<VERSION_STRING>>/i, SQUEL_VERSION) )
