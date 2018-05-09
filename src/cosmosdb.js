@@ -16,40 +16,21 @@ squel.flavours['cosmosdb'] = function (_squel) {
         constructor(options) {
             super(options);
             this._limits = null;
-
-            let _limit = function (max) {
+            this.top = function (max) {
                 max = this._sanitizeLimitOffset(max);
                 this._parent._limits = max;
             };
-
-            this.ParentBlock = class extends cls.Block {
-                constructor(parent) {
-                    super(parent.options);
-                    this._parent = parent;
-                }
-            };
-
-            this.TopBlock = class extends this.ParentBlock {
-                constructor(parent) {
-                    super(parent);
-                    this.top = _limit;
-                }
-
-                _toParamString() {
-                    let str = '';
-                    if (this._parent._limits && !this._parent._offsets) {
-                        str = `TOP (${this._parent._limits})`;
-                    }
-                    return {
-                        query: str,
-                        parameters: [],
-                    }
-                }
-            };
         }
 
-        TOP() {
-            return new this.TopBlock(this);
+        _toParamString() {
+            let str = '';
+            if (this._limits) {
+                str = `TOP (${this._limits})`;
+            }
+            return {
+                query: str,
+                parameters: [],
+            }
         }
     };
 
