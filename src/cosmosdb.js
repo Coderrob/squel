@@ -13,26 +13,15 @@ squel.flavours['cosmosdb'] = function (_squel) {
     });
 
     // TOP x
-    cls.CosmosdbTopBlock = class extends cls.Block {
+    cls.CosmosdbTopBlock = class extends cls.AbstractVerbSingleValueBlock {
         constructor(options) {
-            super(options);
-            this._limits = null;
+            super(_extend({}, options, {
+                verb: 'TOP'
+            }));
         }
 
         top(max) {
-            max = this._sanitizeLimitOffset(max);
-            this._limits = max;
-        }
-
-        _toParamString() {
-            let str = '';
-            if (this._limits) {
-                str = `TOP (${this._limits})`;
-            }
-            return {
-                text: str,
-                values: [],
-            }
+            this._setValue(max);
         }
     };
 
