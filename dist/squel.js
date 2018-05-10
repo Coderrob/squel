@@ -3988,6 +3988,49 @@ squel.flavours['cosmosdb'] = function (_squel) {
   cls.DefaultQueryBuilderOptions.numberedParameters = true;
   cls.DefaultQueryBuilderOptions.numberedParametersPrefix = '@';
 
+  function _extend(dst) {
+    for (var _len12 = arguments.length, sources = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
+      sources[_key12 - 1] = arguments[_key12];
+    }
+
+    if (dst && sources) {
+      var _loop2 = function _loop2(src) {
+        if ((typeof src === 'undefined' ? 'undefined' : _typeof(src)) === 'object') {
+          Object.getOwnPropertyNames(src).forEach(function (key) {
+            dst[key] = src[key];
+          });
+        }
+      };
+
+      var _iteratorNormalCompletion18 = true;
+      var _didIteratorError18 = false;
+      var _iteratorError18 = undefined;
+
+      try {
+        for (var _iterator18 = sources[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+          var src = _step18.value;
+
+          _loop2(src);
+        }
+      } catch (err) {
+        _didIteratorError18 = true;
+        _iteratorError18 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion18 && _iterator18.return) {
+            _iterator18.return();
+          }
+        } finally {
+          if (_didIteratorError18) {
+            throw _iteratorError18;
+          }
+        }
+      }
+    }
+
+    return dst;
+  }
+
   _squel.registerValueHandler(Date, function (date) {
     return '\'' + date.getUTCFullYear() + '-' + (date.getUTCMonth() + 1) + '-' + date.getUTCDate() + ' ' + date.getUTCHours() + ':' + date.getUTCMinutes() + ':' + date.getUTCSeconds() + '\'';
   });
@@ -4014,39 +4057,43 @@ squel.flavours['cosmosdb'] = function (_squel) {
     return _class57;
   }(cls.AbstractVerbSingleValueBlock);
 
-  cls.CosmosdbValueBlock = function (_cls$Block21) {
-    _inherits(_class58, _cls$Block21);
+  cls.CosmosdbValueAndGetFieldBlock = function (_cls$GetFieldBlock) {
+    _inherits(_class58, _cls$GetFieldBlock);
 
     function _class58(options) {
       _classCallCheck(this, _class58);
 
       var _this65 = _possibleConstructorReturn(this, (_class58.__proto__ || Object.getPrototypeOf(_class58)).call(this, options));
 
-      _this65._value = '';
+      _this65.isValueOperation = false;
+      _this65.baseToParamString = _get(_class58.prototype.__proto__ || Object.getPrototypeOf(_class58.prototype), '_toParamString', _this65);
       return _this65;
     }
 
     _createClass(_class58, [{
       key: 'value',
       value: function value(field) {
-        this._value = this._sanitizeField(field);
+        this._fields = [];
+        this.isValueOperation = true;
+        this.field(field);
       }
     }, {
       key: '_toParamString',
       value: function _toParamString() {
-        var str = '';
-        if (this._value) {
-          str = 'VALUE ' + this._value;
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        var params = this.baseToParamString(options);
+
+        if (this.isValueOperation) {
+          params.text = 'VALUE ' + params.text;
         }
-        return {
-          text: str,
-          values: []
-        };
+
+        return params;
       }
     }]);
 
     return _class58;
-  }(cls.Block);
+  }(cls.GetFieldBlock);
 
   // SELECT query builder.
   cls.Select = function (_cls$QueryBuilder15) {
@@ -4057,52 +4104,9 @@ squel.flavours['cosmosdb'] = function (_squel) {
 
       _classCallCheck(this, _class59);
 
-      blocks = blocks || [new cls.StringBlock(options, 'SELECT'), new cls.CosmosdbTopBlock(options), new cls.CosmosdbValueBlock(options), new cls.GetFieldBlock(options), new cls.FromTableBlock(options), new cls.JoinBlock(options), new cls.WhereBlock(options), new cls.OrderByBlock(options)];
+      blocks = blocks || [new cls.StringBlock(options, 'SELECT'), new cls.CosmosdbTopBlock(options), new cls.CosmosdbValueAndGetFieldBlock(options), new cls.FromTableBlock(options), new cls.JoinBlock(options), new cls.WhereBlock(options), new cls.OrderByBlock(options)];
 
       var _this66 = _possibleConstructorReturn(this, (_class59.__proto__ || Object.getPrototypeOf(_class59)).call(this, options, blocks));
-
-      _this66._extend = function (dst) {
-        for (var _len12 = arguments.length, sources = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
-          sources[_key12 - 1] = arguments[_key12];
-        }
-
-        if (dst && sources) {
-          var _loop2 = function _loop2(src) {
-            if ((typeof src === 'undefined' ? 'undefined' : _typeof(src)) === 'object') {
-              Object.getOwnPropertyNames(src).forEach(function (key) {
-                dst[key] = src[key];
-              });
-            }
-          };
-
-          var _iteratorNormalCompletion18 = true;
-          var _didIteratorError18 = false;
-          var _iteratorError18 = undefined;
-
-          try {
-            for (var _iterator18 = sources[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
-              var src = _step18.value;
-
-              _loop2(src);
-            }
-          } catch (err) {
-            _didIteratorError18 = true;
-            _iteratorError18 = err;
-          } finally {
-            try {
-              if (!_iteratorNormalCompletion18 && _iterator18.return) {
-                _iterator18.return();
-              }
-            } finally {
-              if (_didIteratorError18) {
-                throw _iteratorError18;
-              }
-            }
-          }
-        }
-
-        return dst;
-      };
 
       _this66.toString = function () {
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -4122,7 +4126,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
 
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-        options = this._extend({}, this.options, options);
+        options = _extend({}, this.options, options);
 
         var blockResults = this.blocks.map(function (b) {
           return b._toParamString({

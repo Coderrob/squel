@@ -7,6 +7,19 @@ squel.flavours['cosmosdb'] = function (_squel) {
     cls.DefaultQueryBuilderOptions.numberedParameters = true;
     cls.DefaultQueryBuilderOptions.numberedParametersPrefix = '@';
 
+    function _extend(dst, ...sources) {
+        if (dst && sources) {
+            for (let src of sources) {
+                if (typeof src === 'object') {
+                    Object.getOwnPropertyNames(src).forEach(function (key) {
+                        dst[key] = src[key];
+                    });
+                }
+            }
+        }
+
+        return dst;
+    }
 
     _squel.registerValueHandler(Date, function (date) {
         return `'${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes()}:${date.getUTCSeconds()}'`;
@@ -25,25 +38,27 @@ squel.flavours['cosmosdb'] = function (_squel) {
         }
     };
 
-    cls.CosmosdbValueBlock = class extends cls.Block {
+    cls.CosmosdbValueAndGetFieldBlock = class extends cls.GetFieldBlock {
         constructor(options) {
             super(options);
-            this._value = '';
+            this.isValueOperation = false;
+            this.baseToParamString = super._toParamString;
         }
 
         value(field) {
-            this._value = this._sanitizeField(field);
+            this._fields = [];
+            this.isValueOperation = true;
+            this.field(field);
         }
 
-        _toParamString() {
-            let str = '';
-            if (this._value) {
-                str = `VALUE ${this._value}`;
+        _toParamString(options = {}) {
+            let params = this.baseToParamString(options);
+
+            if (this.isValueOperation) {
+                params.text = 'VALUE ' + params.text;
             }
-            return {
-                text: str,
-                values: [],
-            }
+
+            return params;
         }
     };
 
@@ -53,8 +68,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
             blocks = blocks || [
                 new cls.StringBlock(options, 'SELECT'),
                 new cls.CosmosdbTopBlock(options),
-                new cls.CosmosdbValueBlock(options),
-                new cls.GetFieldBlock(options),
+                new cls.CosmosdbValueAndGetFieldBlock(options),
                 new cls.FromTableBlock(options),
                 new cls.JoinBlock(options),
                 new cls.WhereBlock(options),
@@ -63,20 +77,6 @@ squel.flavours['cosmosdb'] = function (_squel) {
 
             super(options, blocks);
 
-            this._extend = function (dst, ...sources) {
-                if (dst && sources) {
-                    for (let src of sources) {
-                        if (typeof src === 'object') {
-                            Object.getOwnPropertyNames(src).forEach(function (key) {
-                                dst[key] = src[key];
-                            });
-                        }
-                    }
-                }
-
-                return dst;
-            };
-
             this.toString = function (options = {}) {
                 return this._toParamString(options).query;
             };
@@ -84,7 +84,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
 
         // Get the final fully constructed query param obj.
         _toParamString(options = {}) {
-            options = this._extend({}, this.options, options);
+            options = _extend({}, this.options, options);
 
             let blockResults = this.blocks.map((b) => b._toParamString({
                 buildParameterized: options.buildParameterized,
