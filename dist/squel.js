@@ -3979,6 +3979,8 @@ squel.flavours['postgres'] = function (_squel) {
   }(cls.QueryBuilder);
 };
 
+'use strict';
+
 squel.flavours['cosmosdb'] = function (_squel) {
   var cls = _squel.cls;
 
@@ -4152,7 +4154,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
         blockValues.forEach(function (block) {
           return block.forEach(function (value) {
             return totalValues.push({
-              'name': '' + options.numberedParametersPrefix + index++,
+              'name': options.numberedParametersPrefix + 'param' + index++,
               'value': value
             });
           });
@@ -4166,7 +4168,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
             var regex = options.parameterCharacter.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
             totalStr = totalStr.replace(new RegExp(regex, 'g'), function () {
-              return '' + options.numberedParametersPrefix + i++;
+              return options.numberedParametersPrefix + 'param' + i++;
             });
           }
         }

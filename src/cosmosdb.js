@@ -1,3 +1,5 @@
+'use strict';
+
 squel.flavours['cosmosdb'] = function (_squel) {
     let cls = _squel.cls;
 
@@ -106,7 +108,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
             blockValues.forEach(block =>
                 block.forEach(value =>
                     totalValues.push({
-                        'name': `${options.numberedParametersPrefix}${index++}`,
+                        'name': `${options.numberedParametersPrefix}param${index++}`,
                         'value': value
                     })));
 
@@ -122,7 +124,7 @@ squel.flavours['cosmosdb'] = function (_squel) {
                     totalStr = totalStr.replace(
                         new RegExp(regex, 'g'),
                         function () {
-                            return `${options.numberedParametersPrefix}${i++}`;
+                            return `${options.numberedParametersPrefix}param${i++}`;
                         }
                     );
                 }
